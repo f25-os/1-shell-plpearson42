@@ -1,4 +1,4 @@
-#!/usr/sbin/python
+#!/usr/bin/python3
 
 import sys
 import os
@@ -10,18 +10,30 @@ MAX_READ = 1024
 
 
 def tokenIn(cmd):
-    return re.split(" ", cmd.decode("utf-8"))[:-1]
+    return re.split(r"[ \n]", cmd.decode("utf-8")[:-1])
 
 
 def writePrompt():
     basename = os.path.basename(os.getcwd())
+    if os.getcwd() == os.environ["HOME"]:
+        basename = '~'
     ps1 = PS1.replace(r"\W", basename)
     os.write(1, ps1.encode("utf-8"))
-    os.write(1, b'\n')
+    return 0
 
 
-def cd(path):
-    os.chdir(path)
+def cd(args):
+    if len(args) == 1:
+        os.chdir(os.environ["HOME"])  # cd with no args takes you home
+        return 0
+    try:
+        os.chdir(args[1])
+    except FileNotFoundError:
+        os.write(2, ("cd: %s: No such file or directory/n" % args[1]).encode("utf-8"))
+        return 1
+    except NotADirectoryError:
+        os.write(2, ("cd: %s: Not a directory/n" % args[1]).encode("utf-8"))
+        return 2
 
 
 def exit():
@@ -29,34 +41,36 @@ def exit():
     sys.exit(0)
 
 
-def run(tokens):
-    isParent = os.fork()
-    if isParent != 0:
+def run(args):
+    id = os.fork()
+
+    if id < 0:
+        os.write("fork failed")
+    elif id == 0:
+        for dir in PATH:
+            program = "%s/%s" % (dir, args[0])
+            try:
+                os.execve(program, args, os.environ)
+            except FileNotFoundError:
+                pass
+
+        os.write(2, ("shell.py: %s: command not found\n" % args[0]).encode("utf-8"))
+        return 1
+    else:
         os.wait()
         return 0
-    else:
-        for path in PATH:
-            try:
-                os.execv("%s/%s"%(path, tokens[0]), tokens[1:])
-            except:
-                pass
-    return 1
 
 
 while 1:
     writePrompt()
     cmd = os.read(0, MAX_READ)
-    tokens = tokenIn(cmd)
-    print(tokens)
-    if tokens[0] == "exit":
+    args = tokenIn(cmd)
+    if args[0] == "exit":
         exit()
-    elif tokens[0] == "cd":
-        cd(tokens[1])
+    elif args[0] == "cd":
+        cd(args)
     else:
-        if run(tokens) != 0:
-            os.write(2, b"command not found")
-        continue
-
+        run(args)
 
 
 

@@ -36,8 +36,9 @@ def cd(args):
         return 2
 
 
-def exit():
-    os.write(1, b"exit\n")
+def exit(quietly = False):
+    if not quietly:
+        os.write(1, b"exit\n")
     sys.exit(0)
 
 
@@ -55,7 +56,7 @@ def run(args):
                 pass
 
         os.write(2, ("shell.py: %s: command not found\n" % args[0]).encode())
-        return 1
+        exit(True)  # exit quietly from the child shell
     else:
         os.wait()
         return 0
@@ -73,61 +74,3 @@ while 1:
         cd(args)
     else:
         run(args)
-
-
-
-
-
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

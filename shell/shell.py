@@ -5,12 +5,12 @@ import os
 import re
 
 PS1 = r" [\W] $ "
-PATH = re.split(":",os.environ["PATH"])
+PATH = re.split(":", os.environ["PATH"])
 MAX_READ = 1024
 
 
 def tokenIn(cmd):
-    return re.split(r"[ \n]", cmd.decode("utf-8")[:-1])
+    return re.split(r"[ \n]", cmd.decode()[:-1])
 
 
 def writePrompt():
@@ -18,7 +18,7 @@ def writePrompt():
     if os.getcwd() == os.environ["HOME"]:
         basename = '~'
     ps1 = PS1.replace(r"\W", basename)
-    os.write(1, ps1.encode("utf-8"))
+    os.write(1, ps1.encode())
     return 0
 
 
@@ -29,10 +29,10 @@ def cd(args):
     try:
         os.chdir(args[1])
     except FileNotFoundError:
-        os.write(2, ("cd: %s: No such file or directory/n" % args[1]).encode("utf-8"))
+        os.write(2, ("cd: %s: No such file or directory/n" % args[1]).encode())
         return 1
     except NotADirectoryError:
-        os.write(2, ("cd: %s: Not a directory/n" % args[1]).encode("utf-8"))
+        os.write(2, ("cd: %s: Not a directory/n" % args[1]).encode())
         return 2
 
 
@@ -54,7 +54,7 @@ def run(args):
             except FileNotFoundError:
                 pass
 
-        os.write(2, ("shell.py: %s: command not found\n" % args[0]).encode("utf-8"))
+        os.write(2, ("shell.py: %s: command not found\n" % args[0]).encode())
         return 1
     else:
         os.wait()
@@ -65,7 +65,9 @@ while 1:
     writePrompt()
     cmd = os.read(0, MAX_READ)
     args = tokenIn(cmd)
-    if args[0] == "exit":
+    if args[0] == '':
+        continue
+    elif args[0] == "exit":
         exit()
     elif args[0] == "cd":
         cd(args)

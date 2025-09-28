@@ -46,8 +46,9 @@ def run(args):
     id = os.fork()
 
     if id < 0:
-        os.write("fork failed")
+        os.write(2, b"fork failed")
     elif id == 0:
+        args = handleRedir(args)
         for dir in PATH:
             program = "%s/%s" % (dir, args[0])
             try:
@@ -60,6 +61,21 @@ def run(args):
     else:
         os.wait()
         return 0
+
+
+def handleRedir(args):
+    if ">" in args:
+        redir = args.index(">")
+        os.close(1)  # close STDOUT
+        os.open(args[redir+1], os.O_CREAT | os.O_WRONLY)
+        os.set_inheritable(1, True)
+        args = args[:redir]  # truncate args to before redir
+    return args
+
+
+def handlePipe(args):
+    # Placeholder
+    return args
 
 
 while 1:
